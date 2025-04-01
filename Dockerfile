@@ -1,23 +1,13 @@
-# Use official Docker-in-Docker image as base
-FROM docker:dind
+FROM ubuntu:22.04
 
-# Install dependencies
-RUN apk add --no-cache \
-    curl \
-    nano \
-    git \
-    openssh \
-    sudo
+# Install dependencies and Docker
+RUN apt update && apt install -y wget curl nano git neofetch \
+    && curl -fsSL https://get.docker.com | sh  # Install Docker [[5]]
 
 # Install sshx.io
 RUN curl -sSf https://sshx.io/get | sh
 
-# Create SSH directory and config
-RUN mkdir -p /root/.ssh && \
-    echo "PermitRootLogin yes" >> /etc/ssh/sshd_config && \
-    echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config
-
-# Setup entrypoint
+# Create entrypoint script
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
