@@ -1,31 +1,28 @@
-# Use official Docker-in-Docker (DinD) image
+# Use official Docker-in-Docker image as base
 FROM docker:dind
 
-# Install Alpine Linux packages (not Ubuntu!)
+# Install dependencies
 RUN apk add --no-cache \
-    bash \
     curl \
-    git \
     nano \
-    neofetch \
-    sudo \
-    docker-compose
+    git \
+    openssh \
+    sudo
 
-# Install SSHX web terminal
+# Install sshx.io
 RUN curl -sSf https://sshx.io/get | sh
 
-# Configure non-root user for Railway compatibility
-RUN adduser -D user && \
-    echo 'user ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers && \
-    # Grant Docker access
-    adduser user docker && \
-    # Fix permissions for DinD
-    mkdir -p /home/user/.docker && \
-    chown -R user:user /home/user
+# Create SSH directory and config
+RUN mkdir -p /root/.ssh && \
+    echo "PermitRootLogin yes" >> /etc/ssh/sshd_config && \
+    echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config
 
-# Switch to non-root user
-USER user
-WORKDIR /home/user
+# Setup entrypoint
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
-# Start Docker daemon + SSHX (critical fix: no sudo)
-CMD ["sh", "-c", "dockerd > /tmp/docker.log 2>&1 & sleep 5; sshx"]
+# Expose required ports
+EXPOSE 22 2375 2376
+
+# Start services via entrypoint
+ENTRYPOINT ["/entrypoint.sh"]
