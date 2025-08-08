@@ -19,7 +19,8 @@ RUN apt-get update && apt-get install -y \
 
 # Install the sshx binary. This command fetches the installation script
 # directly from GitHub and pipes it to the shell, ensuring you get the latest version.
-RUN curl -sS https://raw.githubusercontent.com/sshx/sshx/main/install.sh | sudo sh
+# The 'sudo' command has been removed to fix the exit code 127 error.
+RUN curl -sS https://raw.githubusercontent.com/sshx/sshx/main/install.sh | sh
 
 # Install Docker inside the container. This is a multi-step process
 # that adds the official Docker GPG key and repository before installing the packages.
@@ -42,4 +43,3 @@ EXPOSE 80
 # The `--shell=/bin/bash` option ensures that the new terminal session uses bash.
 # This grants full root access to anyone with the session URL.
 CMD ["sshx", "--shell=/bin/bash"]
-
