@@ -48,4 +48,4 @@ EXPOSE 80
 # This is the command that runs when the container starts.
 # It starts an sshx session with a bash shell, which will print a URL in the container logs.
 # This grants full root access to anyone with the session URL.
-CMD ["sshx", "--shell=/bin/bash"]
+CMD ["./start.sh"]
