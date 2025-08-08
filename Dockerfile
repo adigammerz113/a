@@ -1,11 +1,12 @@
-# Use a Ubuntu image as the base. Ubuntu is a common and stable choice.
+# Use a Ubuntu image as the base.
 FROM ubuntu:22.04
 
-# Set a non-interactive mode for commands to prevent prompts during installation.
+# Set a non-interactive mode for commands.
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Update the package list and install all necessary tools.
-# This includes `curl` for downloading files and other dependencies for Docker.
+# Update package lists and install necessary dependencies.
+# 'curl' is needed for both sshx and Docker installations.
+# The other packages are required for the Docker repository setup.
 RUN apt-get update && apt-get install -y \
     curl \
     gnupg \
@@ -15,19 +16,9 @@ RUN apt-get update && apt-get install -y \
     --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
-# Dynamically determine the architecture and download the correct sshx binary.
-# The 'dpkg --print-architecture' command gets the system's architecture (e.g., amd64, arm64).
-# A conditional statement then maps this to the filename used in sshx releases.
-ARG TARGETARCH
-RUN case "${TARGETARCH}" in \
-    "amd64") ARCHITECTURE=x86_64 ;; \
-    "arm64") ARCHITECTURE=aarch64 ;; \
-    *) echo "Unsupported architecture: ${TARGETARCH}"; exit 1 ;; \
-    esac; \
-    curl -L -o /usr/local/bin/sshx "https://github.com/sshx/sshx/releases/latest/download/sshx-${ARCHITECTURE}-linux"
-
-# Make the downloaded binary executable.
-RUN chmod +x /usr/local/bin/sshx
+# Install the sshx binary using the official command.
+# The `sh` command is used to execute the script piped from `curl`.
+RUN curl -sSf https://sshx.io/get | sh
 
 # Install Docker inside the container. This is a multi-step process
 # that adds the official Docker GPG key and repository before installing the packages.
@@ -45,7 +36,7 @@ WORKDIR /
 # Expose port 80. Railway will automatically handle this port for web services.
 EXPOSE 80
 
-# This is the command that runs when the container starts.
-# It starts an sshx session with a bash shell, which will print a URL in the container logs.
+# This command runs when the container starts.
+# It launches an sshx session with a bash shell, which will print a URL in the container logs.
 # This grants full root access to anyone with the session URL.
-CMD [curl -sSf https://sshx.io/get | sh]
+CMD ["sshx", "--shell=/bin/bash"]
