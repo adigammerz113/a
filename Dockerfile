@@ -4,10 +4,9 @@ FROM ubuntu:22.04
 # Set a non-interactive mode for commands to prevent prompts during installation.
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Update the package list and install all necessary tools for this setup.
-# 'curl' is for downloading sshx and Docker's GPG key.
-# 'gnupg', 'lsb-release', 'ca-certificates', and 'software-properties-common'
-# are required dependencies for installing Docker on Ubuntu.
+# Update the package list and install all necessary tools.
+# 'curl' is for downloading the sshx binary and Docker's GPG key.
+# The other packages are required for a proper Docker installation.
 RUN apt-get update && apt-get install -y \
     curl \
     gnupg \
@@ -17,10 +16,13 @@ RUN apt-get update && apt-get install -y \
     --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
-# Install the sshx binary. This command fetches the installation script
-# directly from GitHub and pipes it to the shell, ensuring you get the latest version.
-# The 'sudo' command has been removed to fix the exit code 127 error.
-RUN curl -sS https://raw.githubusercontent.com/sshx/sshx/main/install.sh | sh
+# Download the latest stable sshx binary directly from GitHub Releases.
+# This approach is more reliable than piping the install script.
+# It places the executable directly in a directory that is in the container's PATH.
+RUN curl -L -o /usr/local/bin/sshx "https://github.com/sshx/sshx/releases/latest/download/sshx-x86_64-linux"
+
+# Make the downloaded binary executable.
+RUN chmod +x /usr/local/bin/sshx
 
 # Install Docker inside the container. This is a multi-step process
 # that adds the official Docker GPG key and repository before installing the packages.
@@ -39,7 +41,6 @@ WORKDIR /
 EXPOSE 80
 
 # This is the command that runs when the container starts.
-# It starts an sshx session, which will print a URL in the container logs.
-# The `--shell=/bin/bash` option ensures that the new terminal session uses bash.
+# It starts an sshx session with a bash shell, which will print a URL in the container logs.
 # This grants full root access to anyone with the session URL.
 CMD ["sshx", "--shell=/bin/bash"]
