@@ -5,8 +5,7 @@ FROM ubuntu:22.04
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Update the package list and install all necessary tools.
-# 'curl' is for downloading the sshx binary and Docker's GPG key.
-# The other packages are required for a proper Docker installation.
+# This includes `curl` for downloading files and other dependencies for Docker.
 RUN apt-get update && apt-get install -y \
     curl \
     gnupg \
@@ -16,10 +15,16 @@ RUN apt-get update && apt-get install -y \
     --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
-# Download the latest stable sshx binary directly from GitHub Releases.
-# This approach is more reliable than piping the install script.
-# It places the executable directly in a directory that is in the container's PATH.
-RUN curl -L -o /usr/local/bin/sshx "https://github.com/sshx/sshx/releases/latest/download/sshx-x86_64-linux"
+# Dynamically determine the architecture and download the correct sshx binary.
+# The 'dpkg --print-architecture' command gets the system's architecture (e.g., amd64, arm64).
+# A conditional statement then maps this to the filename used in sshx releases.
+ARG TARGETARCH
+RUN case "${TARGETARCH}" in \
+    "amd64") ARCHITECTURE=x86_64 ;; \
+    "arm64") ARCHITECTURE=aarch64 ;; \
+    *) echo "Unsupported architecture: ${TARGETARCH}"; exit 1 ;; \
+    esac; \
+    curl -L -o /usr/local/bin/sshx "https://github.com/sshx/sshx/releases/latest/download/sshx-${ARCHITECTURE}-linux"
 
 # Make the downloaded binary executable.
 RUN chmod +x /usr/local/bin/sshx
